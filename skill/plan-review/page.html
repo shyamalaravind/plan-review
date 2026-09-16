@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Plan Review</title>
-<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script>/*MARKED*/</script>
 <style>
 :root {
   --bg: #fbfaf8; --fg: #1f1e1c; --muted: #6b6862; --line: #e4e1db;
@@ -81,16 +81,11 @@ const hl = window.Highlight ? new Highlight() : null;
 if (hl) CSS.highlights.set('review', hl);
 let pending = null, sent = false;
 
-fetch('plan').then(r => r.json()).then(({ name, text }) => {
-  document.title = 'Review · ' + name;
-  $('#name').textContent = name;
-  if (window.marked) {
-    marked.use({ renderer: { html: esc } });
-    $('#plan').innerHTML = marked.parse(text);
-  } else {
-    $('#plan').innerHTML = `<pre style="white-space:pre-wrap">${esc(text)}</pre>`;
-  }
-});
+const { name, text } = /*PLAN*/;
+document.title = 'Review · ' + name;
+$('#name').textContent = name;
+marked.use({ renderer: { html: esc } });
+$('#plan').innerHTML = marked.parse(text);
 
 document.addEventListener('mouseup', e => {
   if (e.target.closest?.('#add')) return;

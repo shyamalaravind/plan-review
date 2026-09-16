@@ -1,6 +1,6 @@
 ---
 name: plan-review
-description: Open the current plan (or any markdown file) in the browser so the user can highlight text and leave inline comments, then act on the feedback they send back. Only runs when the user invokes /plan-review.
+description: Open the current plan (or any markdown file) in the browser so the user can highlight text and leave inline comments, then act on the feedback they send back. Use only when the user explicitly asks for a plan review (e.g. /plan-review).
 disable-model-invocation: true
 argument-hint: "[file.md]"
 ---
@@ -11,23 +11,26 @@ The user wants to review a plan in the browser instead of the terminal.
 
 ## 1. Pick the file
 
-- If the user gave a path (`$ARGUMENTS`), review that file.
-- Otherwise review the most recent plan in this conversation:
-  - If plan mode saved it under `~/.claude/plans/`, use that file.
-  - If not, write that plan verbatim to a new temp file
-    (`"$(mktemp -d)/plan.md"`). If there is no plan in the conversation,
-    use your last substantial message.
+- If the user named a file, review that file.
+- Otherwise review the most recent plan in this conversation. If your tool
+  already saved it as a markdown file, use that file. If not, write the plan
+  verbatim to a new temp file (`"$(mktemp -d)/plan.md"`). If there is no plan,
+  use your last substantial message.
 
 ## 2. Open the review
 
-Run this with Bash, **with `run_in_background: true`**. It blocks until the user submits:
+`review.py` sits next to this SKILL.md. Run it with the absolute path to this
+skill's directory:
 
 ```
-python3 ~/.claude/skills/plan-review/review.py <file>
+python3 <this-skill-dir>/review.py <file>
 ```
 
-Tell the user in one line that the review is open in their browser, then end
-your turn. Don't poll; you'll be notified when it finishes.
+It opens the browser and blocks until the user submits. Run it as a background
+command if your tool supports that, and you'll be notified when it exits. Tell
+the user in one line that the review is open, then stop and don't poll. If
+background commands aren't supported, run it in the foreground with the
+longest timeout available.
 
 ## 3. Act on the feedback
 

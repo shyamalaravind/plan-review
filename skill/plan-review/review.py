@@ -8,7 +8,8 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-PAGE = (Path(__file__).resolve().parent / "page.html").read_text()
+HERE = Path(__file__).resolve().parent
+PAGE = (HERE / "page.html").read_text().replace("/*MARKED*/", (HERE / "marked.min.js").read_text())
 
 
 def one_line(s):
@@ -33,7 +34,8 @@ def main():
     if len(sys.argv) != 2:
         sys.exit("usage: review.py <file.md>")
     path = Path(sys.argv[1]).expanduser()
-    plan = json.dumps({"name": path.name, "text": path.read_text()})
+    plan = json.dumps({"name": path.name, "text": path.read_text()}).replace("<", "\\u003c")
+    page = PAGE.replace("/*PLAN*/", plan)
     # Random path prefix so other local pages can't read the plan or post fake feedback.
     base = f"/{secrets.token_urlsafe(16)}/"
     done, result = threading.Event(), {}
@@ -52,9 +54,7 @@ def main():
 
         def do_GET(self):
             if self.path == base:
-                self.reply(PAGE, "text/html; charset=utf-8")
-            elif self.path == base + "plan":
-                self.reply(plan, "application/json")
+                self.reply(page, "text/html; charset=utf-8")
             else:
                 self.send_error(404)
 
