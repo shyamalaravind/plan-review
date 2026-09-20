@@ -53,6 +53,9 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 #add { position: absolute; padding: 4px 10px; border-radius: 6px; border: 0;
   background: var(--accent); color: #fff; font-size: 13px; cursor: pointer;
   box-shadow: 0 2px 8px rgb(0 0 0 / .2); }
+button.quiet { border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px;
+  padding: 2px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+button.quiet:hover { color: var(--fg); }
 .done { text-align: center; margin-top: 30vh; color: var(--muted); }
 </style>
 </head>
@@ -70,6 +73,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
       <button class="btn" id="approve">Approve</button>
       <button class="btn primary" id="send">Request changes</button>
     </div>
+    <button class="quiet" id="end">End review without feedback</button>
   </aside>
 </main>
 <button id="add" hidden>Comment</button>
@@ -131,12 +135,18 @@ function addComment(range) {
   c.note.focus();
 }
 
+const collect = approved => ({
+  approved,
+  general: $('#general').value.trim(),
+  comments: comments.map(c => ({ quote: c.quote, note: c.note.value.trim() })).filter(c => c.note),
+});
+const drafted = () => { const d = collect(false); return d.comments.length > 0 || d.general !== ''; };
+const done = msg => { sent = true; document.body.innerHTML = '<p class="done">' + msg + '</p>'; };
+const beacon = body =>
+  navigator.sendBeacon('submit', new Blob([JSON.stringify(body)], { type: 'application/json' }));
+
 async function submit(approved) {
-  const body = {
-    approved,
-    general: $('#general').value.trim(),
-    comments: comments.map(c => ({ quote: c.quote, note: c.note.value.trim() })).filter(c => c.note),
-  };
+  const body = collect(approved);
   if (!approved && !body.comments.length && !body.general) {
     alert('Add a comment first, or approve.');
     return;
@@ -147,12 +157,24 @@ async function submit(approved) {
     alert('Could not reach Claude — the review process has stopped.');
     return;
   }
-  sent = true;
-  document.body.innerHTML = '<p class="done">Sent to Claude. You can close this tab.</p>';
+  done('Sent to Claude. You can close this tab.');
 }
+
+// Ending sends no feedback: the agent is told the review stopped, with no instructions.
+function end() {
+  if (drafted() && !confirm('End the review? Your comments are discarded and nothing is sent back.')) return;
+  sent = true;
+  beacon({ ended: true, immediate: true });
+  done('Review ended — no feedback sent. You can close this tab.');
+}
+
 $('#approve').onclick = () => submit(true);
 $('#send').onclick = () => submit(false);
-addEventListener('beforeunload', e => { if (!sent && comments.length) e.preventDefault(); });
+$('#end').onclick = end;
+// Closing the tab ends the review too, rather than leaving the agent waiting forever.
+// Without `immediate` the server holds the end briefly, so a reload can reclaim the review.
+addEventListener('pagehide', () => { if (!sent) beacon({ ended: true }); });
+addEventListener('beforeunload', e => { if (!sent && drafted()) e.preventDefault(); });
 </script>
 </body>
 </html>

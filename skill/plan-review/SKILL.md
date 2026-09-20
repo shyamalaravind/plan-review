@@ -19,18 +19,19 @@ The user wants to review a plan in the browser instead of the terminal.
 
 ## 2. Open the review
 
-`review.py` sits next to this SKILL.md. Run it with the absolute path to this
+`review` sits next to this SKILL.md. Run it with the absolute path to this
 skill's directory:
 
 ```
-python3 <this-skill-dir>/review.py <file>
+<this-skill-dir>/review <file>
 ```
 
-It opens the browser and blocks until the user submits. Run it as a background
-command if your tool supports that, and you'll be notified when it exits. Tell
-the user in one line that the review is open, then stop and don't poll. If
-background commands aren't supported, run it in the foreground with the
-longest timeout available.
+It compiles the server on first use (about a second, once) and from then on
+starts instantly. It opens the browser and blocks until the user submits or
+ends the review. Run it as a background command if your tool supports that,
+and you'll be notified when it exits. Tell the user in one line that the
+review is open, then stop and don't poll. If background commands aren't
+supported, run it in the foreground with the longest timeout available.
 
 ## 3. Act on the feedback
 
@@ -44,3 +45,9 @@ The command prints one of:
   revise the plan. If the plan came from a file, update that file. Show what
   changed, one line per comment. Don't start implementing; the user will review
   again or approve.
+- `ENDED: ...`: the user ended the review without feedback, by clicking **End
+  review** or by closing the tab. Treat it as an abrupt end with no
+  instructions. Say in at most one short line that the review ended with no
+  feedback, and stop. Don't revise the plan, don't start implementing, don't
+  guess at what they wanted, and don't ask a follow-up question — wait for them
+  to say what's next.
