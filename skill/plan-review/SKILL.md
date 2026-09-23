@@ -1,13 +1,36 @@
 ---
 name: plan-review
-description: Open the current plan (or any markdown file) in the browser so the user can highlight text and leave inline comments, then act on the feedback they send back. Use only when the user explicitly asks for a plan review (e.g. /plan-review).
-disable-model-invocation: true
+description: Open the current plan (or any markdown file) in the browser so the user can highlight text and leave inline comments, then act on the feedback they send back. Use whenever the user explicitly asks for a plan review (e.g. /plan-review), AND automatically before ever finishing plan mode via whatever native plan-approval/plan-mode-exit tool this host provides (e.g. a tool literally named `exit_plan_mode`, or an equivalent "plan ready for review" gate) — run this skill first instead of just presenting that native card.
 argument-hint: "[file.md]"
 ---
 
 # Plan review
 
 The user wants to review a plan in the browser instead of the terminal.
+
+## 0. Before exiting plan mode
+
+Whatever your host calls its native plan-approval gate (a tool such as
+`exit_plan_mode`, or any equivalent "plan ready for review" card that hands a
+plan to the user for a yes/no), run this skill **first** instead of invoking
+that gate right away:
+
+1. Reuse the plan file if your host already keeps one for this conversation —
+   don't rewrite it. Only write a fresh one (see step 1 below) if none
+   exists; that's a one-time cost, not a per-review cost, since the plan text
+   is already in context either way.
+2. Open it with this skill (steps 1-2 below) and act on the feedback (step
+   3). `CHANGES REQUESTED` or `ENDED` means don't invoke the native gate yet —
+   revise the plan and try again, or stop and wait, per step 3's rules.
+3. Once the review resolves to `APPROVED` or `APPROVED WITH NOTES`, go ahead
+   and invoke the native plan-approval gate the way you normally would
+   (same summary/fleet/autopilot fields, folding in any notes). The browser
+   review is an extra human checkpoint in front of that gate, not a
+   replacement for it — don't drop whatever options it normally offers.
+
+If the user explicitly runs `/plan-review` directly rather than as part of
+this pre-gate handoff, just do steps 1-3 below on their target file and stop
+after acting on the feedback; there's no native gate to invoke afterward.
 
 ## 1. Pick the file
 
