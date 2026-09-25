@@ -35,4 +35,11 @@ Create the skills directory first if it doesn't exist. Requires a C++17 compiler
 
 The first review builds the binary (~1s); after that it starts in a few milliseconds. To build it ahead of time: `make -C skill/plan-review`.
 
+The review opens in your default browser. To use a different one, set `PLAN_REVIEW_BROWSER` to an app name on macOS or a command on Linux. If that browser can't be found, the default browser opens instead. Put the variable in `~/.zshenv` (or your shell's equivalent), not `~/.zshrc`. Agents run commands in non-interactive shells, and those skip `~/.zshrc`.
+
+```sh
+export PLAN_REVIEW_BROWSER="Brave Browser"   # macOS
+export PLAN_REVIEW_BROWSER=brave-browser     # Linux
+```
+
 You can also run it without an agent: `skill/plan-review/review plan.md` prints the feedback to stdout.

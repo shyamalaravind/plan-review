@@ -471,6 +471,35 @@ static void replace_first(std::string &haystack, const std::string &needle,
   if (at != std::string::npos) haystack.replace(at, needle.size(), sub);
 }
 
+static std::string shell_quote(const std::string &s) {
+  std::string out = "'";
+  for (char c : s) out += c == '\'' ? std::string("'\\''") : std::string(1, c);
+  return out + "'";
+}
+
+// PLAN_REVIEW_BROWSER picks the browser: an app name on macOS ("Brave Browser"), a
+// command on Linux ("brave-browser"). Unset, or not found, the default browser opens.
+static bool open_browser(const std::string &url) {
+  std::string target = shell_quote(url) + " >/dev/null 2>&1";
+  const char *browser = std::getenv("PLAN_REVIEW_BROWSER");
+#ifdef __APPLE__
+  if (browser && *browser) {
+    if (std::system(("open -a " + shell_quote(browser) + " " + target).c_str()) == 0) return true;
+    std::fprintf(stderr, "review: can't open %s; using the default browser\n", browser);
+  }
+  return std::system(("open " + target).c_str()) == 0;
+#else
+  if (browser && *browser) {
+    std::string cmd = shell_quote(browser);
+    if (std::system(("command -v " + cmd + " >/dev/null 2>&1").c_str()) == 0)
+      // Backgrounded: a browser that wasn't already running stays in the foreground.
+      return std::system((cmd + " " + target + " &").c_str()) == 0;
+    std::fprintf(stderr, "review: can't find %s; using the default browser\n", browser);
+  }
+  return std::system(("xdg-open " + target).c_str()) == 0;
+#endif
+}
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     std::fprintf(stderr, "usage: review <file.md>\n");
@@ -535,13 +564,7 @@ int main(int argc, char **argv) {
   std::fprintf(stderr, "Review open at %s\n", url.c_str());
   std::fflush(stderr);
 
-#ifdef __APPLE__
-  const char *opener = "open";
-#else
-  const char *opener = "xdg-open";
-#endif
-  std::string cmd = std::string(opener) + " '" + url + "' >/dev/null 2>&1";
-  if (std::system(cmd.c_str()) != 0)
+  if (!open_browser(url))
     std::fprintf(stderr, "review: open the URL above in your browser\n");
 
   std::unique_lock<std::mutex> lock(g_mutex);
